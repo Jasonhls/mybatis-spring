@@ -68,9 +68,12 @@ public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, Re
    */
   @Override
   public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+    //获取注解@MapperScan对象
     AnnotationAttributes mapperScanAttrs = AnnotationAttributes
         .fromMap(importingClassMetadata.getAnnotationAttributes(MapperScan.class.getName()));
     if (mapperScanAttrs != null) {
+      //注入一个MapperScannerRegistrar对象，beanName命名为：importingClassMetadata.getClassName() + "#" + "MapperScannerRegistrar" + "#" + index;
+      // 比如：com.cn.mybatisStudyTwo.config.MybatisConfigTwo#MapperScannerRegistrar#0
       registerBeanDefinitions(importingClassMetadata, mapperScanAttrs, registry,
           generateBaseBeanName(importingClassMetadata, 0));
     }
@@ -78,7 +81,9 @@ public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, Re
 
   void registerBeanDefinitions(AnnotationMetadata annoMeta, AnnotationAttributes annoAttrs,
       BeanDefinitionRegistry registry, String beanName) {
-
+    //定义一个MapperScannerConfigurer的BeanDefinition，（注意，MapperScannerConfigurer是一个BeanDefinitionRegistryPostProcessor，
+    // 在refresh的invokeBeanFactoryPostProcessors中会遍历执行spring容器中所有的BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry方法），
+    // 但是名字为beanName，比如com.cn.mybatisStudyTwo.config.MybatisConfigTwo#MapperScannerRegistrar#0
     BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
     builder.addPropertyValue("processPropertyPlaceHolders", true);
 
@@ -113,6 +118,7 @@ public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, Re
     }
 
     List<String> basePackages = new ArrayList<>();
+    //取出注解@MapperScan的value值，配置的是mapper的扫描路径，后面会把扫描路径填充到MapperScannerConfigurer对象的basePackages中。
     basePackages.addAll(
         Arrays.stream(annoAttrs.getStringArray("value")).filter(StringUtils::hasText).collect(Collectors.toList()));
 
@@ -136,6 +142,7 @@ public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, Re
       builder.addPropertyValue("defaultScope", defaultScope);
     }
 
+    //这里会把basePackage属性的名称和值添加到BeanDefinition的propertyValues中，在getBean的实例化过程中，populate中会填充属性的值。
     builder.addPropertyValue("basePackage", StringUtils.collectionToCommaDelimitedString(basePackages));
 
     registry.registerBeanDefinition(beanName, builder.getBeanDefinition());
